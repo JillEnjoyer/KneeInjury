@@ -1,0 +1,15 @@
+# IDE settings
+.idea/
+
+# Python virtual environment
+.venv/
+
+# Compiled Python files
+__pycache__/
+
+# Build artifacts
+build/
+dist/
+
+# CSV folder
+CSV/
