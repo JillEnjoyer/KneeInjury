@@ -4,8 +4,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-#from filters import lowpass_filter
-
 def row_separate(file_path):
     df = pd.read_csv(file_path, sep=',', header=0)
     return df
@@ -15,7 +13,7 @@ def calculate_rms(signal):
     return np.sqrt(np.mean(np.square(signal)))
 
 
-# Функция для расчета SNR (Signal-to-Noise Ratio)
+# SNR calculating function
 def calculate_snr(signal, noise):
     signal_rms = calculate_rms(signal)
     noise_rms = calculate_rms(noise)
@@ -23,6 +21,7 @@ def calculate_snr(signal, noise):
 
 
 # Функция для расчета резидуалов и их среднего и медианы
+# Residual, median and mean calculating function
 def calculate_residuals(signal):
     mean_value = np.mean(signal)
     residuals = signal - mean_value
@@ -31,7 +30,6 @@ def calculate_residuals(signal):
     return mean_residual, median_residual
 
 
-# Генерация шума для примера
 def generate_noise(size):
     return np.random.normal(0, 0.001, size)
 
@@ -57,32 +55,32 @@ def process_file(file_path):
     accel_y = df['Y (g)']
     accel_z = df['Z (g)']
 
-    # Убираем смещения
+    # Remove bias
     accel_x -= np.mean(accel_x)
     accel_y -= np.mean(accel_y)
     accel_z -= np.mean(accel_z)
 
-    # Расчет RMS
+    # RMS calculation
     rms_x = calculate_rms(accel_x)
     rms_y = calculate_rms(accel_y)
     rms_z = calculate_rms(accel_z)
 
-    # Генерация шума
+    # Noise generation
     noise_x = generate_noise(len(accel_x))
     noise_y = generate_noise(len(accel_y))
     noise_z = generate_noise(len(accel_z))
 
-    # Расчет SNR
+    # SNR calculation
     snr_x = calculate_snr(accel_x, noise_x)
     snr_y = calculate_snr(accel_y, noise_y)
     snr_z = calculate_snr(accel_z, noise_z)
 
-    # Расчет резидуалов
+    # Residual calculation
     mean_res_x, median_res_x = calculate_residuals(accel_x)
     mean_res_y, median_res_y = calculate_residuals(accel_y)
     mean_res_z, median_res_z = calculate_residuals(accel_z)
 
-    # Построение графика
+    # Plot creation
     plt.figure(figsize=(8, 8))
     plt.plot(time, accel_x, label='Accel X', color='black')
     plt.plot(time, accel_y, label='Accel Y', color='red')
@@ -94,12 +92,12 @@ def process_file(file_path):
     plt.legend()
     plt.grid(True)
 
-    # Сохранение графика
+    # Plot creating
     save_path = file_path.replace('.csv', '.jpg')
     plt.savefig(save_path)
     plt.close()
 
-    # Запись данных в txt файл
+    # Data recording in txt file
     txt_file_path = file_path.replace('.csv', '.txt')
     with open(txt_file_path, 'w') as f:
         f.write(f'Results for {file_path}:\n')

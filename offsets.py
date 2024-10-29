@@ -1,10 +1,10 @@
 import pandas as pd
 
+
 def apply_offsets(file_path, start_offset, end_offset):
     df = pd.read_csv(file_path)
     original_end_time = df['Time (s)'].max()
 
-    # Сдвиг временных точек и обрезка
     df['Time (s)'] = df['Time (s)'] - start_offset
     df = df[df['Time (s)'] <= original_end_time - end_offset]
 

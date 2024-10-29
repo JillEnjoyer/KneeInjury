@@ -101,8 +101,9 @@ def main():
             file_path = navigate_folders()
             Num1, Num2 = filters()
             DesiredType = None
-            if (Num1 == -1 and Num2 == -1) or Num1 == None or Num2 ==None:
-                return None
+            if (Num1 == -1 and Num2 == -1) or Num1 == None or Num2 == None:
+                #return None
+                continue
             elif Num1 == -1:
                 DesiredType = "HighPass"
             elif Num2 == -1:

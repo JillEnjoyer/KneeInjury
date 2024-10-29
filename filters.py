@@ -24,14 +24,14 @@ def highpass_filter(data, cutoff, fs, order=5):
 
 
 def apply_filter(data, filter_type, cutoff_low, cutoff_high, fs):
-    if filter_type == 'lowpass':
+    if filter_type == 'LowPass':
         return lowpass_filter(data, cutoff_low, fs)
-    elif filter_type == 'highpass':
+    elif filter_type == 'HighPass':
         return highpass_filter(data, cutoff_high, fs)
-    elif filter_type == 'bandpass':
+    elif filter_type == 'BandPass':
         return highpass_filter(lowpass_filter(data, cutoff_low, fs), cutoff_high, fs)
     else:
-        print("Неправильный тип фильтра")
+        print("Wrong filter type inserted")
         return data
 
 
@@ -69,7 +69,6 @@ def means_medians_and_residuals(df, file):
     return  removed_bias_mean_x, removed_bias_mean_y, removed_bias_mean_z,removed_bias_median_x, removed_bias_median_y, removed_bias_median_z
 
 
-# Функция для чтения данных из файлов и их фильтрации
 def data_reading(file_path, cutoff_low, cutoff_high, DesiredType, fs=SAMPLE_RATE):
     for file in os.listdir(file_path):
         if file.endswith('.csv'):
@@ -81,33 +80,31 @@ def data_reading(file_path, cutoff_low, cutoff_high, DesiredType, fs=SAMPLE_RATE
             mean_y -= mean_y.iloc[0]
             mean_z -= mean_z.iloc[0]
 
-            filtered_x = apply_filter(mean_x, 'bandpass', cutoff_low, cutoff_high, fs)
-            filtered_y = apply_filter(mean_y, 'bandpass', cutoff_low, cutoff_high, fs)
-            filtered_z = apply_filter(mean_z, 'bandpass', cutoff_low, cutoff_high, fs)
+            filtered_x = apply_filter(mean_x, DesiredType, cutoff_low, cutoff_high, fs)
+            filtered_y = apply_filter(mean_y, DesiredType, cutoff_low, cutoff_high, fs)
+            filtered_z = apply_filter(mean_z, DesiredType, cutoff_low, cutoff_high, fs)
 
             signal_plot(df, file_path, file, filtered_x, filtered_y, filtered_z, mean_x, mean_y,
                         mean_z, med_x, med_y, med_z)
 
 
-# Функция для построения и сохранения графиков
 def signal_plot(df, main_folder, file_name, filtered_x, filtered_y, filtered_z, mean_x, mean_y, mean_z,
                 med_x, med_y, med_z):
     plot_save_path = os.path.join(main_folder, f"{file_name.replace('.csv', '_filtered.jpg')}")
 
     plt.figure(figsize=(10, 10))
-    plt.plot(df['Time (s)'], filtered_x, label='Фильтрованный Accel X', color='black')
-    plt.plot(df['Time (s)'], filtered_y, label='Фильтрованный Accel Y', color='red')
-    plt.plot(df['Time (s)'], filtered_z, label='Фильтрованный Accel Z', color='blue')
-    plt.title(f'Фильтрованные данные {file_name}')
-    plt.xlabel('Время (с)')
-    plt.ylabel('Ускорение (g)')
+    plt.plot(df['Time (s)'], filtered_x, label='Filtered Accel X', color='black')
+    plt.plot(df['Time (s)'], filtered_y, label='Filtered Accel Y', color='red')
+    plt.plot(df['Time (s)'], filtered_z, label='Filtered Accel Z', color='blue')
+    plt.title(f'Filtered data {file_name}')
+    plt.xlabel('Time (с)')
+    plt.ylabel('Acceleration (g)')
     plt.legend()
     plt.grid(True)
     plt.savefig(plot_save_path)
     plt.close()
 
 
-# Вспомогательные функции для RMS и SNR
 def rms(data):
     return np.sqrt(np.mean(data ** 2))
 
