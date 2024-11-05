@@ -25,11 +25,11 @@ def highpass_filter(data, cutoff, fs, order=5):
 
 def apply_filter(data, filter_type, cutoff_low, cutoff_high, fs):
     if filter_type == 'LowPass':
-        return lowpass_filter(data, cutoff_low, fs)
+        return lowpass_filter(data, cutoff_low, fs), 0
     elif filter_type == 'HighPass':
-        return highpass_filter(data, cutoff_high, fs)
+        return 0, highpass_filter(data, cutoff_high, fs)
     elif filter_type == 'BandPass':
-        return highpass_filter(lowpass_filter(data, cutoff_low, fs), cutoff_high, fs)
+        return lowpass_filter(data, cutoff_low, fs), highpass_filter(data, cutoff_high, fs)
     else:
         print("Wrong filter type inserted")
         return data
@@ -69,22 +69,27 @@ def means_medians_and_residuals(df, file):
     return  removed_bias_mean_x, removed_bias_mean_y, removed_bias_mean_z,removed_bias_median_x, removed_bias_median_y, removed_bias_median_z
 
 
-def data_reading(file_path, cutoff_low, cutoff_high, DesiredType, fs=SAMPLE_RATE):
+def data_reading(file_path, cutoff_low, cutoff_high, DesiredType, noise_path, fs=SAMPLE_RATE):
     for file in os.listdir(file_path):
         if file.endswith('.csv'):
             full_file_path = os.path.join(file_path, file)
             df = row_separate(full_file_path)
+            print(df)
             mean_x, mean_y, mean_z, med_x, med_y, med_z = means_medians_and_residuals(df, file)
 
             mean_x -= mean_x.iloc[0]
             mean_y -= mean_y.iloc[0]
             mean_z -= mean_z.iloc[0]
 
-            filtered_x = apply_filter(mean_x, DesiredType, cutoff_low, cutoff_high, fs)
-            filtered_y = apply_filter(mean_y, DesiredType, cutoff_low, cutoff_high, fs)
-            filtered_z = apply_filter(mean_z, DesiredType, cutoff_low, cutoff_high, fs)
+            filtered_x_lp, filtered_x_hp = apply_filter(mean_x, DesiredType, cutoff_low, cutoff_high, fs)
+            filtered_y_lp, filtered_y_hp = apply_filter(mean_y, DesiredType, cutoff_low, cutoff_high, fs)
+            filtered_z_lp, filtered_z_hp = apply_filter(mean_z, DesiredType, cutoff_low, cutoff_high, fs)
 
-            signal_plot(df, file_path, file, filtered_x, filtered_y, filtered_z, mean_x, mean_y,
+            end_data_x = np.array(mean_x) - np.array(filtered_x_lp) - np.array(filtered_x_hp)
+            end_data_y = np.array(mean_y) - np.array(filtered_y_lp) - np.array(filtered_y_hp)
+            end_data_z = np.array(mean_z) - np.array(filtered_z_lp) - np.array(filtered_z_hp)
+
+            signal_plot(df, file_path, file, end_data_x, end_data_y, end_data_z, mean_x, mean_y,
                         mean_z, med_x, med_y, med_z)
 
 
@@ -103,12 +108,3 @@ def signal_plot(df, main_folder, file_name, filtered_x, filtered_y, filtered_z, 
     plt.grid(True)
     plt.savefig(plot_save_path)
     plt.close()
-
-
-def rms(data):
-    return np.sqrt(np.mean(data ** 2))
-
-
-def snr(signal, noise_rms):
-    signal_rms = rms(signal)
-    return 10 * np.log10((signal_rms ** 2) / (noise_rms ** 2)) if noise_rms != 0 else float('inf')

@@ -1,13 +1,33 @@
+#main.py
 import os
 from offsets import apply_offsets
 from calc import signal_plot
 from filters import data_reading
-import re
+from ConfigHandling import read_config, write_config
+
+
 
 # Функция для навигации по папкам
 def navigate_folders():
     current_path = ""
-    while True:
+    old_path_usage = False
+    noise_path = last_path = 0
+    noise_path, last_path = read_config()
+    if noise_path == 0 or noise_path is None:
+        noise_path = None
+
+    if last_path == 0 or last_path is None:
+        old_path_usage = False
+    else:
+        if input(f"Do you want to use {last_path} as current Path? y/n: ").lower() == 'y':
+            if os.path.exists(last_path) and os.path.isdir(last_path):
+                current_path = last_path
+                old_path_usage = True
+        else:
+            print("Old path usage is declined")
+
+
+    while not old_path_usage:
         folder_path = input("Enter Your Start Path: ").strip()
         if os.path.exists(folder_path) and os.path.isdir(folder_path):
             current_path = folder_path
@@ -36,7 +56,7 @@ def navigate_folders():
                     current_path = selected_path
                 elif os.path.isfile(selected_path):
                     if selected_item.endswith('.csv'):
-                        return selected_path  # Возвращаем путь к выбранному файлу
+                        return selected_path, noise_path  # Возвращаем путь к выбранному файлу
                     else:
                         print("Invalid file type. Please select a .csv file.")
             else:
@@ -44,7 +64,7 @@ def navigate_folders():
 
         elif user_input.lower() == 'f':  # Выбор папки
             if all(os.path.isfile(os.path.join(current_path, item)) for item in items):
-                return current_path  # Возвращаем путь папки
+                return current_path, noise_path  # Возвращаем путь папки
             else:
                 print("You are not in a folder containing only files. Navigate to a folder with files.")
 
@@ -53,7 +73,7 @@ def navigate_folders():
 
         elif user_input.lower() == 's':  # Сохранить путь
             print(f"Path saved: {current_path}")
-            return current_path  # Сохраняем путь к текущей папке
+            return current_path, noise_path  # Сохраняем путь к текущей папке
 
         elif user_input.lower() == 'e':  # Выход
             break
@@ -98,11 +118,10 @@ def main():
                 end_offset = float(input("Enter end offset (seconds): "))
                 apply_offsets(file_path, start_offset, end_offset)
         elif ans == '3':
-            file_path = navigate_folders()
+            file_path, noise_path = navigate_folders()
             Num1, Num2 = filters()
             DesiredType = None
-            if (Num1 == -1 and Num2 == -1) or Num1 == None or Num2 == None:
-                #return None
+            if (Num1 == -1 and Num2 == -1) or Num1 is None or Num2 is None:
                 continue
             elif Num1 == -1:
                 DesiredType = "HighPass"
@@ -110,12 +129,16 @@ def main():
                 DesiredType = "LowPass"
             else:
                 DesiredType = "BandPass"
-
-            data_reading(file_path, Num1, Num2, DesiredType)  # lowpass
+            print("Choosen Filter Type = " + DesiredType)
+            data_reading(file_path, Num1, Num2, DesiredType, noise_path)
         elif ans == '4':
             print("\nMade by Milana K., Kristina M., Artur N., Jeffrey T.\n")
         elif ans == '5':
             break
+        elif ans == '9':
+            print("Choose a folder with noise samples/1 sample in this folder/file with medium")
+            folder = navigate_folders()
+            write_config(None, folder)
         else:
             print("Incorrect option, try again.")
 
