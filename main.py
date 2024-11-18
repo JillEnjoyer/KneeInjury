@@ -8,26 +8,32 @@ from ConfigHandling import read_config, write_config
 
 
 # Функция для навигации по папкам
-def navigate_folders():
+def navigate_folders(needed_type):
     current_path = ""
     old_path_usage = False
-    noise_path = last_path = 0
-    noise_path, last_path = read_config()
-    if noise_path == 0 or noise_path is None:
-        noise_path = None
-
-    if last_path == 0 or last_path is None:
-        old_path_usage = False
+    if needed_type == "main":
+        noise_path, current_path = read_config()
+    elif needed_type == "noise":
+        current_path, last_path = read_config()
     else:
-        if input(f"Do you want to use {last_path} as current Path? y/n: ").lower() == 'y':
-            if os.path.exists(last_path) and os.path.isdir(last_path):
-                current_path = last_path
-                old_path_usage = True
+        print("Entered wrong flag")
+        return
+
+    if input(f"Do you want to use {current_path} as current Path? y/n: ").lower() == 'y':
+        print("y is entered")
+        if os.path.exists(current_path):
+            old_path_usage = True
+            if current_path.endswith(".csv"):
+                return current_path
+
         else:
-            print("Old path usage is declined")
+            print("File is not found. File path would be created by hands")
+    else:
+        current_path = ""
+        print("Old path usage is declined")
 
 
-    while not old_path_usage:
+    while current_path == "":
         folder_path = input("Enter Your Start Path: ").strip()
         if os.path.exists(folder_path) and os.path.isdir(folder_path):
             current_path = folder_path
@@ -56,26 +62,26 @@ def navigate_folders():
                     current_path = selected_path
                 elif os.path.isfile(selected_path):
                     if selected_item.endswith('.csv'):
-                        return selected_path, noise_path  # Возвращаем путь к выбранному файлу
+                        return selected_path
                     else:
                         print("Invalid file type. Please select a .csv file.")
             else:
                 print("Invalid selection.")
 
-        elif user_input.lower() == 'f':  # Выбор папки
+        elif user_input.lower() == 'f':
             if all(os.path.isfile(os.path.join(current_path, item)) for item in items):
-                return current_path, noise_path  # Возвращаем путь папки
+                return current_path
             else:
                 print("You are not in a folder containing only files. Navigate to a folder with files.")
 
-        elif user_input.lower() == 'b':  # Назад
+        elif user_input.lower() == 'b':
             current_path = os.path.dirname(current_path)
 
-        elif user_input.lower() == 's':  # Сохранить путь
+        elif user_input.lower() == 's':
             print(f"Path saved: {current_path}")
-            return current_path, noise_path  # Сохраняем путь к текущей папке
+            return current_path
 
-        elif user_input.lower() == 'e':  # Выход
+        elif user_input.lower() == 'e':
             break
 
         else:
@@ -108,9 +114,9 @@ def main():
         print("1. Read Data\n2. Crop Data\n3. Apply Filters\n4. About\n5. Exit")
         ans = input()
         if ans == '1':
-            file_path = navigate_folders()
+            file_path = navigate_folders("main")
             if file_path:
-                signal_plot(file_path)
+                signal_plot(file_path, None , None, "plot")
         elif ans == '2':
             file_path = navigate_folders()
             if file_path:
@@ -118,7 +124,9 @@ def main():
                 end_offset = float(input("Enter end offset (seconds): "))
                 apply_offsets(file_path, start_offset, end_offset)
         elif ans == '3':
-            file_path, noise_path = navigate_folders()
+            file_path = navigate_folders("main")
+            noise_path = navigate_folders("noise")
+            print(file_path + "/" + noise_path)
             Num1, Num2 = filters()
             DesiredType = None
             if (Num1 == -1 and Num2 == -1) or Num1 is None or Num2 is None:
@@ -136,9 +144,16 @@ def main():
         elif ans == '5':
             break
         elif ans == '9':
-            print("Choose a folder with noise samples/1 sample in this folder/file with medium")
-            folder = navigate_folders()
-            write_config(None, folder)
+            print("Now would be expected path to noise file or start point")
+            folder = navigate_folders("main")
+            print(folder)
+            Num = input("Choose a file with:\n1)Noise sample\n2)Wished start point\n")
+            if Num == "1":
+                write_config(folder, None)
+            elif Num == "2":
+                write_config(None, folder)
+            else:
+                print("Wrong option is chosen")
         else:
             print("Incorrect option, try again.")
 

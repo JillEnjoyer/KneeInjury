@@ -15,7 +15,7 @@ def initialize_config(config_file="configHandling.csv"):
 
 def read_config(config_file="configHandling.csv"):
     df = pd.read_csv(config_file)
-    config = [df.iat[0,0], df.iat[1,0]]
+    config = [df.iat[0, 0], df.iat[1, 0]]
     print(config)
 
     return config[0], config[1]

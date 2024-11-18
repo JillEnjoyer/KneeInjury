@@ -2,18 +2,14 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import csv
+
+from RMS import calculate_rms
+from SNR import calculate_snr
 
 def row_separate(file_path):
     df = pd.read_csv(file_path, sep=',', header=0)
     return df
-
-def calculate_rms(data):
-    return np.sqrt(np.mean(np.square(data)))
-
-def calculate_snr(signal, noise):
-    signal_rms = calculate_rms(signal)
-    noise_rms = calculate_rms(noise)
-    return 20 * np.log10(signal_rms / noise_rms) if noise_rms != 0 else np.inf
 
 def calculate_residuals(signal):
     mean_value = np.mean(signal)
@@ -49,55 +45,88 @@ def save_results_to_txt(file_path, results):
             f.write(f'{key}: {value}\n')
     print(f"Results saved in {txt_file_path}")
 
-def process_file(file_path):
+def process_file(file_path, noise_file_path, presaved_noise_flag, mode_flag):
     df = row_separate(file_path)
 
-    time = df['Time (s)']
-    accel_x = df['X (g)'] - np.mean(df['X (g)'])
-    accel_y = df['Y (g)'] - np.mean(df['Y (g)'])
-    accel_z = df['Z (g)'] - np.mean(df['Z (g)'])
+    if mode_flag == "plot":
+        time = df['Time (s)']
+        accel_x = df['X (g)'] - np.mean(df['X (g)'])
+        accel_y = df['Y (g)'] - np.mean(df['Y (g)'])
+        accel_z = df['Z (g)'] - np.mean(df['Z (g)'])
 
-    rms_x = calculate_rms(accel_x)
-    rms_y = calculate_rms(accel_y)
-    rms_z = calculate_rms(accel_z)
+        save_plot(time, accel_x, accel_y, accel_z, file_path)
 
-    noise_x = generate_noise(len(accel_x))
-    noise_y = generate_noise(len(accel_y))
-    noise_z = generate_noise(len(accel_z))
+    elif mode_flag == "filter":
+        if presaved_noise_flag is True:
+            with open(noise_file_path, 'r') as file:
+                reader = csv.DictReader(file)
+                rows = list(reader)
 
-    snr_x = calculate_snr(accel_x, noise_x)
-    snr_y = calculate_snr(accel_y, noise_y)
-    snr_z = calculate_snr(accel_z, noise_z)
+                rms_noise_x = rows[0][0]
+                rms_noise_y = rows[1][0]
+                rms_noise_z = rows[2][0]
+        elif presaved_noise_flag is False:
+            ddff = row_separate(noise_file_path)
 
-    mean_res_x, median_res_x = calculate_residuals(accel_x)
-    mean_res_y, median_res_y = calculate_residuals(accel_y)
-    mean_res_z, median_res_z = calculate_residuals(accel_z)
+            noise_time = ddff['Time (s)']
+            noise_accel_x = ddff['X (g)'] - np.mean(ddff['X (g)'])
+            noise_accel_y = ddff['Y (g)'] - np.mean(ddff['Y (g)'])
+            noise_accel_z = ddff['Z (g)'] - np.mean(ddff['Z (g)'])
 
-    results = {
-        'RMS for X axis': rms_x,
-        'RMS for Y axis': rms_y,
-        'RMS for Z axis': rms_z,
-        'SNR for X axis': snr_x,
-        'SNR for Y axis': snr_y,
-        'SNR for Z axis': snr_z,
-        'Mean Residuals for X axis': mean_res_x,
-        'Mean Residuals for Y axis': mean_res_y,
-        'Mean Residuals for Z axis': mean_res_z,
-        'Median Residuals for X axis': median_res_x,
-        'Median Residuals for Y axis': median_res_y,
-        'Median Residuals for Z axis': median_res_z
-    }
+            rms_noise_x = calculate_rms(noise_accel_x)
+            rms_noise_y = calculate_rms(noise_accel_y)
+            rms_noise_z = calculate_rms(noise_accel_z)
 
-    save_plot(time, accel_x, accel_y, accel_z, file_path)
-    save_results_to_txt(file_path, results)
+            time = df['Time (s)']
+            accel_x = df['X (g)'] - np.mean(df['X (g)'])
+            accel_y = df['Y (g)'] - np.mean(df['Y (g)'])
+            accel_z = df['Z (g)'] - np.mean(df['Z (g)'])
 
-def signal_plot(file_path):
+            rms_x = calculate_rms(accel_x)
+            rms_y = calculate_rms(accel_y)
+            rms_z = calculate_rms(accel_z)
+
+            snr_x = calculate_snr(rms_x, rms_noise_x)
+            snr_y = calculate_snr(rms_y, rms_noise_y)
+            snr_z = calculate_snr(rms_z, rms_noise_z)
+
+            mean_res_x, median_res_x = calculate_residuals(accel_x)
+            mean_res_y, median_res_y = calculate_residuals(accel_y)
+            mean_res_z, median_res_z = calculate_residuals(accel_z)
+
+            results = {
+                'RMS for X axis': rms_x,
+                'RMS for Y axis': rms_y,
+                'RMS for Z axis': rms_z,
+                'SNR for X axis': snr_x,
+                'SNR for Y axis': snr_y,
+                'SNR for Z axis': snr_z,
+                'Mean Residuals for X axis': mean_res_x,
+                'Mean Residuals for Y axis': mean_res_y,
+                'Mean Residuals for Z axis': mean_res_z,
+                'Median Residuals for X axis': median_res_x,
+                'Median Residuals for Y axis': median_res_y,
+                'Median Residuals for Z axis': median_res_z
+            }
+
+            save_plot(time, accel_x, accel_y, accel_z, file_path)
+            save_results_to_txt(file_path, results)
+
+
+def signal_plot(file_path, noise_file_path, presaved_noise_flag, mode_flag):
     if os.path.isdir(file_path):
         for item in os.listdir(file_path):
             if item.endswith('.csv'):
                 full_item_path = os.path.join(file_path, item)
                 print(f"Processing file: {full_item_path}")
-                process_file(full_item_path)
+
+                if mode_flag == "plot":
+                    process_file(full_item_path, None, None, mode_flag)
+                else:
+                    process_file(full_item_path, noise_file_path, presaved_noise_flag, mode_flag)
     else:
         print(f"Processing single file: {file_path}")
-        process_file(file_path)
+        if mode_flag == "plot":
+            process_file(file_path, None, None, mode_flag)
+        else:
+            process_file(file_path, noise_file_path, presaved_noise_flag, mode_flag)

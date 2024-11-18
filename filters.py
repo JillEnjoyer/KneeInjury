@@ -70,32 +70,45 @@ def means_medians_and_residuals(df, file):
 
 
 def data_reading(file_path, cutoff_low, cutoff_high, DesiredType, noise_path, fs=SAMPLE_RATE):
-    for file in os.listdir(file_path):
-        if file.endswith('.csv'):
-            full_file_path = os.path.join(file_path, file)
-            df = row_separate(full_file_path)
-            print(df)
-            mean_x, mean_y, mean_z, med_x, med_y, med_z = means_medians_and_residuals(df, file)
+    # Проверяем, является ли путь файлом
+    if os.path.isfile(file_path):
+        files_to_process = [file_path]
+    elif os.path.isdir(file_path):
+        # Если это папка, собираем список файлов внутри
+        files_to_process = [
+            os.path.join(file_path, file)
+            for file in os.listdir(file_path) if file.endswith('.csv')
+        ]
+    else:
+        raise ValueError(f"Invalid path: {file_path} is neither a file nor a directory.")
 
-            mean_x -= mean_x.iloc[0]
-            mean_y -= mean_y.iloc[0]
-            mean_z -= mean_z.iloc[0]
+    # Итерация по каждому файлу
+    for full_file_path in files_to_process:
+        df = row_separate(full_file_path)
+        print(df)
+        mean_x, mean_y, mean_z, med_x, med_y, med_z = means_medians_and_residuals(df, full_file_path)
 
-            filtered_x_lp, filtered_x_hp = apply_filter(mean_x, DesiredType, cutoff_low, cutoff_high, fs)
-            filtered_y_lp, filtered_y_hp = apply_filter(mean_y, DesiredType, cutoff_low, cutoff_high, fs)
-            filtered_z_lp, filtered_z_hp = apply_filter(mean_z, DesiredType, cutoff_low, cutoff_high, fs)
+        mean_x -= mean_x.iloc[0]
+        mean_y -= mean_y.iloc[0]
+        mean_z -= mean_z.iloc[0]
 
-            end_data_x = np.array(mean_x) - np.array(filtered_x_lp) - np.array(filtered_x_hp)
-            end_data_y = np.array(mean_y) - np.array(filtered_y_lp) - np.array(filtered_y_hp)
-            end_data_z = np.array(mean_z) - np.array(filtered_z_lp) - np.array(filtered_z_hp)
+        filtered_x_lp, filtered_x_hp = apply_filter(mean_x, DesiredType, cutoff_low, cutoff_high, fs)
+        filtered_y_lp, filtered_y_hp = apply_filter(mean_y, DesiredType, cutoff_low, cutoff_high, fs)
+        filtered_z_lp, filtered_z_hp = apply_filter(mean_z, DesiredType, cutoff_low, cutoff_high, fs)
 
-            signal_plot(df, file_path, file, end_data_x, end_data_y, end_data_z, mean_x, mean_y,
-                        mean_z, med_x, med_y, med_z)
+        end_data_x = np.array(mean_x) - np.array(filtered_x_lp) - np.array(filtered_x_hp)
+        end_data_y = np.array(mean_y) - np.array(filtered_y_lp) - np.array(filtered_y_hp)
+        end_data_z = np.array(mean_z) - np.array(filtered_z_lp) - np.array(filtered_z_hp)
+
+        signal_plot(df, file_path, os.path.basename(full_file_path), end_data_x, end_data_y, end_data_z, mean_x, mean_y,
+                    mean_z, med_x, med_y, med_z)
 
 
 def signal_plot(df, main_folder, file_name, filtered_x, filtered_y, filtered_z, mean_x, mean_y, mean_z,
                 med_x, med_y, med_z):
-    plot_save_path = os.path.join(main_folder, f"{file_name.replace('.csv', '_filtered.jpg')}")
+    # Используем директорию, где находится CSV
+    folder_path = os.path.dirname(main_folder)
+    plot_save_path = os.path.join(folder_path, f"{file_name.replace('.csv', '_filtered.jpg')}")
 
     plt.figure(figsize=(10, 10))
     plt.plot(df['Time (s)'], filtered_x, label='Filtered Accel X', color='black')
@@ -106,5 +119,10 @@ def signal_plot(df, main_folder, file_name, filtered_x, filtered_y, filtered_z, 
     plt.ylabel('Acceleration (g)')
     plt.legend()
     plt.grid(True)
+
+    # Создаем директорию, если её нет
+    os.makedirs(folder_path, exist_ok=True)
+
     plt.savefig(plot_save_path)
     plt.close()
+
