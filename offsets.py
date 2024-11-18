@@ -1,18 +1,14 @@
 import pandas as pd
 
+
 def apply_offsets(file_path, start_offset, end_offset):
     df = pd.read_csv(file_path)
 
-    #original_end_time = df['Time (s)'].max()
+    df['Time (s)'] -= start_offset
 
-    df['Time (s)'] = df['Time (s)'] - start_offset
-    df = df[df['Time (s)'] >= 0]
+    df = df[(df['Time (s)'] >= 0) & (df['Time (s)'] <= (end_offset - start_offset))]
 
-    adjusted_end_time = end_offset - start_offset
-
-    df = df[df['Time (s)'] <= adjusted_end_time]
-
-    new_file_name = file_path.replace('.csv', f'-offstart-{start_offset}-offend-{end_offset}.csv')
+    new_file_name = f"{file_path.replace('.csv', '')}-offstart-{start_offset}-offend-{end_offset}.csv"
 
     df.to_csv(new_file_name, index=False)
     print(f"File saved as: {new_file_name}")
