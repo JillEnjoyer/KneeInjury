@@ -3,7 +3,7 @@ from offsets import apply_offsets
 from calc import signal_plot
 from filters import data_reading
 from ConfigHandling import read_config, write_config
-
+from audio_visualizer import data_to_audio
 
 def navigate_folders(needed_type):
     config_paths = read_config()
@@ -76,7 +76,13 @@ def filters():
 
 def main():
     while True:
-        print("1. Read Data\n2. Crop Data\n3. Apply Filters\n4. About\n5. Exit")
+        print("1. Read Data\n"
+              "2. Crop Data\n"
+              "3. Apply Filters\n"
+              "4. About\n"
+              "5. Audio from .CSV\n"
+              "6. Exit\n"
+              "9. Change Base Values")
         ans = input().strip()
 
         if ans == '1':
@@ -112,6 +118,11 @@ def main():
             print("\nMade by Milana K., Kristina M., Artur N., Jeffrey T.\n")
 
         elif ans == '5':
+            file_path = navigate_folders("main")
+            if file_path:
+                data_to_audio(file_path)
+
+        elif ans == '6':
             break
 
         elif ans == '9':
