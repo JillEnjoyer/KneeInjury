@@ -28,6 +28,3 @@ def data_to_audio(file_path, sample_rate=44100):
 
         write(output_file, sample_rate, audio_data)
         print(f"Audio for {axis_label} axis saved to {output_file}")
-
-# Пример использования
-# data_to_audio('path_to_your_file.csv')

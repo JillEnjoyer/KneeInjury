@@ -5,6 +5,7 @@ from filters import data_reading
 from ConfigHandling import read_config, write_config
 from audio_visualizer import data_to_audio
 
+
 def navigate_folders(needed_type):
     config_paths = read_config()
     current_path = config_paths[0 if needed_type == "noise" else 1]
